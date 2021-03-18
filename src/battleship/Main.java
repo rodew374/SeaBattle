@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 /**
  * This Main class runs the game Battleship
- * @version 1.12 17 Mar 2021 Version displays ships set by user. Does not work with 10 coordinate
+ * @version 1.13 17 Mar 2021 Version fixes setShip(ship, size) and adds isLegal(...)
  * @author Zac Inman
  */
 public class Main {
@@ -16,7 +16,7 @@ public class Main {
     static class Game {
         private final int SIZE = 10;
         private final Scanner scanner = new Scanner(System.in);
-        private char[][] playerField;
+        private final char[][] playerField;
 
         public Game() {
             playerField = createField();
@@ -107,8 +107,8 @@ public class Main {
             coords = getCoords();
             startY = coords[0][0].charAt(0);
             endY = coords[1][0].charAt(0);
-            startX = Integer.parseInt(coords[0][1]);    //TODO how to handle digit 10
-            endX = Integer.parseInt(coords[1][1]);      //TODO how to handle digit 10
+            startX = Integer.parseInt(coords[0][1]);
+            endX = Integer.parseInt(coords[1][1]);
             isHorizontal = startY == endY;
             isVertical = startX == endX;
 
@@ -116,26 +116,36 @@ public class Main {
                 length = Math.abs(startX - endX) + 1;
                 if (length == size) {
                     fieldIndex = startX < endX ? startX - 1 : endX - 1;
-                    for (int i = 0; i < size; i++) {
-                        playerField[startY - 'A'][fieldIndex++] = 'O';
+                    if (isLegal(startY, startX, length, fieldIndex, true)) {
+                        for (int i = 0; i < size; i++) {
+                            playerField[startY - 'A'][fieldIndex++] = 'O';
+                        }
+                    } else {
+                        System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
+                        setShip(ship, size);
                     }
                 } else {
-                    System.out.printf("\nError! Wrong length of the %s! Try again:\n> ", ship);
+                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship);
                     setShip(ship, size);
                 }
             } else if (isVertical) {
                 length = Math.abs(startY - endY) + 1;
                 if (length == size) {
                     fieldIndex = startY < endY ? startY - 'A' : endY - 'A';
-                    for (int i = 0; i < size; i++) {
-                        playerField[fieldIndex++][startX - 1] = 'O';
+                    if (isLegal(startY, startX, length, fieldIndex, false)) {
+                        for (int i = 0; i < size; i++) {
+                            playerField[fieldIndex++][startX - 1] = 'O';
+                        }
+                    } else {
+                        System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
+                        setShip(ship, size);
                     }
                 } else {
-                    System.out.printf("\nError! Wrong length of the %s! Try again:\n> ", ship);
+                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship);
                     setShip(ship, size);
                 }
             } else {
-                System.out.printf("\nError! %s coordinates must either be horizontal or vertical! Try again:\n> ", ship);
+                System.out.print("\nError! Wrong ship location! Try again:\n\n> ");
                 setShip(ship, size);
             }
         }
@@ -152,11 +162,65 @@ public class Main {
          * @return a 2D array of Strings
          */
         private String[][] getCoords() {
-            String[] input = scanner.nextLine().split(" ");
-            String[] start = input[0].split("");
-            String[] end = input[1].split("");
+            String[] input = scanner.nextLine().toUpperCase().split(" ");
+            String[] start = input[0].split("", 2);
+            String[] end = input[1].split("", 2);
 
             return new String[][] {start, end};
+        }
+
+        /**
+         * Checks is a ship can be placed at the specified location
+         * @param startY a letter [A-J], representing first half of starting coordinates for the ship to be placed
+         * @param startX a number [1-10], representing second half of starting coordinates for the ship to be placed
+         * @param length length of ship to be placed
+         * @param fieldIndex starting index of the field area to be checked
+         * @param isHorizontal direction the field will be checked
+         * @return false if there is already a ship at one of the coordinates, otherwise, true
+         */
+        private boolean isLegal(char startY, int startX, int length, int fieldIndex, boolean isHorizontal) {
+            if (isHorizontal) {
+                try {
+                    if (playerField[startY - 'A'][fieldIndex - 1] == 'O') {
+                        return false;
+                    }
+                } catch (IndexOutOfBoundsException ignored) {
+
+                }
+                for (int i = 0; i < length; i++) {
+                    if (playerField[startY - 'A'][fieldIndex++] == 'O') {
+                        return false;
+                    }
+                }
+                try {
+                    if (playerField[startY - 'A'][fieldIndex] == 'O') {
+                        return false;
+                    }
+                } catch (IndexOutOfBoundsException ignored) {
+
+                }
+            } else {
+                try {
+                    if (playerField[fieldIndex - 1][startX - 1] == 'O') {
+                        return false;
+                    }
+                } catch (IndexOutOfBoundsException ignored) {
+
+                }
+                for (int i = 0; i < length; i++) {
+                    if (playerField[fieldIndex++][startX - 1] == 'O') {
+                        return false;
+                    }
+                }
+                try {
+                    if (playerField[fieldIndex][startX - 1] == 'O') {
+                        return false;
+                    }
+                } catch (IndexOutOfBoundsException ignored) {
+
+                }
+            }
+            return true;
         }
     }
 }
