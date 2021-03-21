@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 /**
  * This Main class runs the game Battleship
- * @version 1.13 17 Mar 2021 Version fixes setShip(ship, size) and adds isLegal(...)
+ * @version 1.13 20 Mar 2021 Version utilizes the takeShot() method to fire a test shot at the players own field
  * @author Zac Inman
  */
 public class Main {
@@ -36,10 +36,16 @@ public class Main {
             return field;
         }
 
+        /**
+         * Initiates the battle
+         */
         public void startGame() {
             displayField(playerField);
             takePosition();
 
+            System.out.println("\nThe game starts!");
+            displayField(playerField);
+            takeShot(playerField);
         }
 
         /**
@@ -62,6 +68,9 @@ public class Main {
             System.out.println();
         }
 
+        /**
+         * Instantiates the ships
+         */
         private void takePosition() {
             String ship1 = "Aircraft Carrier";
             String ship2 = "Battleship";
@@ -90,9 +99,13 @@ public class Main {
             System.out.printf(prompt, ship5, 2);
             setShip(ship5, 2);
             displayField(playerField);
-
         }
 
+        /**
+         * Sets position of the ships
+         * @param ship string name of the ship to be set
+         * @param size int size of the ship to be set
+         */
         private void setShip(String ship, int size) {
             boolean isHorizontal;
             boolean isVertical;
@@ -102,13 +115,16 @@ public class Main {
             int endX;
             int fieldIndex;
             int length;
-            String[][] coords;
+            String[] coord;
 
-            coords = getCoords();
-            startY = coords[0][0].charAt(0);
-            endY = coords[1][0].charAt(0);
-            startX = Integer.parseInt(coords[0][1]);
-            endX = Integer.parseInt(coords[1][1]);
+            coord = getCoord();
+            startY = coord[0].charAt(0);
+            startX = Integer.parseInt(coord[1]);
+
+            coord = getCoord();
+            endY = coord[0].charAt(0);
+            endX = Integer.parseInt(coord[1]);
+
             isHorizontal = startY == endY;
             isVertical = startX == endX;
 
@@ -151,22 +167,15 @@ public class Main {
         }
 
         /**
-         * Reads user input and returns the data as coordinates formatted as a 2D array of Strings
-         * The 2D coordinates array consists of:
-         *  array[0]: start
-         *      start[0]: a letter [A-J]
-         *      start[1]: a number [1-10]
-         *  array[1]: end
-         *      end[0]: a letter [A-Z]
-         *      end[1]: a number [1-10]
-         * @return a 2D array of Strings
+         * Reads user input and returns the data as coordinates formatted as an array of Strings
+         * The coordinate array consists of:
+         *  coord[0]: a letter [A-Z]
+         *  coord[1]: a number [1-10]
+         * @return an array of Strings
          */
-        private String[][] getCoords() {
-            String[] input = scanner.nextLine().toUpperCase().split(" ");
-            String[] start = input[0].split("", 2);
-            String[] end = input[1].split("", 2);
+        private String[] getCoord() {
 
-            return new String[][] {start, end};
+            return scanner.next().toUpperCase().split("", 2);
         }
 
         /**
@@ -176,7 +185,7 @@ public class Main {
          * @param length length of ship to be placed
          * @param fieldIndex starting index of the field area to be checked
          * @param isHorizontal direction the field will be checked
-         * @return false if there is already a ship at one of the coordinates, otherwise, true
+         * @return false if there is already a ship at one of the coordinates and directly in front of or behind, otherwise, true
          */
         private boolean isLegal(char startY, int startX, int length, int fieldIndex, boolean isHorizontal) {
             if (isHorizontal) {
@@ -221,6 +230,42 @@ public class Main {
                 }
             }
             return true;
+        }
+
+        /**
+         * Gathers coordinate from the user and shoots at the passed war field
+         * @param field area to be shot at
+         */
+        private void takeShot(char[][] field) {
+            String[] coord;
+            String message;
+            char y;
+            int x;
+            char target;
+
+            System.out.println("\nTake a shot!\n\n> ");
+
+            coord = getCoord();
+            y = coord[0].charAt(0);
+            x = Integer.parseInt(coord[1]);
+
+            try {
+                target = field[y - 'A'][x - 1];
+                if (target == 'O') {
+                    field[y - 'A'][x - 1] = 'X';
+                    message = "You hit a ship!";
+                } else if (target == 'X') {
+                    message = "You've already hit that target!";
+                } else {
+                    field[y - 'A'][x - 1] = 'M';
+                    message = "You missed!";
+                }
+                displayField(field);
+                System.out.printf("\n%s", message);
+            } catch (IndexOutOfBoundsException e) {
+                System.out.print("\nError! You entered the wrong coordinates! Try again:\n\n> ");
+                takeShot(field);
+            }
         }
     }
 }
