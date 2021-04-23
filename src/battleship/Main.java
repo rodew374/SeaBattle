@@ -5,7 +5,8 @@ import java.util.Arrays;
 
 /**
  * This Main class runs the game Battleship
- * @version 1.13 20 Mar 2021 Version utilizes the takeShot() method to fire a test shot at the players own field
+ * @version 1.14 23 Apr 2021 Version changes displayField() to accept a fogOfWar boolean
+ * Version also displays to versions of the field, one hidden by Fog of War and one normal
  * @author Zac Inman
  */
 public class Main {
@@ -40,19 +41,20 @@ public class Main {
          * Initiates the battle
          */
         public void startGame() {
-            displayField(playerField);
+            displayField(playerField, false);
             takePosition();
 
             System.out.println("\nThe game starts!");
-            displayField(playerField);
+            displayField(playerField, true);
             takeShot(playerField);
         }
 
         /**
-         * Displays the play area to the use
+         * Displays the play area to the user
          * @param field can either be a player or enemy field
+         * @param fogOfWar determines if ship locations are shown, shown if false
          */
-        private void displayField(char[][] field) {
+        private void displayField(char[][] field, boolean fogOfWar) {
             String[] labelX = new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"};
             char[] labelY = new char[] {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'j'};
 
@@ -62,7 +64,11 @@ public class Main {
                 System.out.printf("\n%c ", labelY[i]);
 
                 for (char e : field[i]) {
-                    System.out.printf("%c ", e);
+                    if (fogOfWar && e == 'O') {
+                        System.out.print("~ ");
+                    } else {
+                        System.out.printf("%c ", e);
+                    }
                 }
             }
             System.out.println();
@@ -72,41 +78,20 @@ public class Main {
          * Instantiates the ships
          */
         private void takePosition() {
-            String ship1 = "Aircraft Carrier";
-            String ship2 = "Battleship";
-            String ship3 = "Submarine";
-            String ship4 = "Cruiser";
-            String ship5 = "Destroyer";
-
             String prompt = "\nEnter the coordinates of the %s (%d cells):\n\n> ";
 
-            System.out.printf(prompt, ship1, 5);
-            setShip(ship1, 5);
-            displayField(playerField);
-
-            System.out.printf(prompt, ship2, 4);
-            setShip(ship2, 4);
-            displayField(playerField);
-
-            System.out.printf(prompt, ship3, 3);
-            setShip(ship3, 3);
-            displayField(playerField);
-
-            System.out.printf(prompt, ship4, 3);
-            setShip(ship4, 3);
-            displayField(playerField);
-
-            System.out.printf(prompt, ship5, 2);
-            setShip(ship5, 2);
-            displayField(playerField);
+            for (Ship ship : Ship.values()) {
+                System.out.printf(prompt, ship.getName(), ship.getSize());
+                setShip(ship);
+                displayField(playerField, false);
+            }
         }
 
         /**
          * Sets position of the ships
-         * @param ship string name of the ship to be set
-         * @param size int size of the ship to be set
+         * @param ship enum to be set
          */
-        private void setShip(String ship, int size) {
+        private void setShip(Ship ship) {
             boolean isHorizontal;
             boolean isVertical;
             char startY;
@@ -130,39 +115,39 @@ public class Main {
 
             if (isHorizontal) {
                 length = Math.abs(startX - endX) + 1;
-                if (length == size) {
+                if (length == ship.getSize()) {
                     fieldIndex = startX < endX ? startX - 1 : endX - 1;
                     if (isLegal(startY, startX, length, fieldIndex, true)) {
-                        for (int i = 0; i < size; i++) {
+                        for (int i = 0; i < ship.getSize(); i++) {
                             playerField[startY - 'A'][fieldIndex++] = 'O';
                         }
                     } else {
                         System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
-                        setShip(ship, size);
+                        setShip(ship);
                     }
                 } else {
-                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship);
-                    setShip(ship, size);
+                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship.getName());
+                    setShip(ship);
                 }
             } else if (isVertical) {
                 length = Math.abs(startY - endY) + 1;
-                if (length == size) {
+                if (length == ship.getSize()) {
                     fieldIndex = startY < endY ? startY - 'A' : endY - 'A';
                     if (isLegal(startY, startX, length, fieldIndex, false)) {
-                        for (int i = 0; i < size; i++) {
+                        for (int i = 0; i < ship.getSize(); i++) {
                             playerField[fieldIndex++][startX - 1] = 'O';
                         }
                     } else {
                         System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
-                        setShip(ship, size);
+                        setShip(ship);
                     }
                 } else {
-                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship);
-                    setShip(ship, size);
+                    System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship.getName());
+                    setShip(ship);
                 }
             } else {
                 System.out.print("\nError! Wrong ship location! Try again:\n\n> ");
-                setShip(ship, size);
+                setShip(ship);
             }
         }
 
@@ -243,7 +228,7 @@ public class Main {
             int x;
             char target;
 
-            System.out.println("\nTake a shot!\n\n> ");
+            System.out.print("\nTake a shot!\n\n> ");
 
             coord = getCoord();
             y = coord[0].charAt(0);
@@ -260,10 +245,11 @@ public class Main {
                     field[y - 'A'][x - 1] = 'M';
                     message = "You missed!";
                 }
-                displayField(field);
-                System.out.printf("\n%s", message);
+                displayField(field, true);
+                System.out.printf("\n%s\n", message);
+                displayField(field, false);
             } catch (IndexOutOfBoundsException e) {
-                System.out.print("\nError! You entered the wrong coordinates! Try again:\n\n> ");
+                System.out.print("\nError! You entered the wrong coordinates! Try again:\n ");
                 takeShot(field);
             }
         }
