@@ -53,7 +53,7 @@ public enum Ship {
      * @param i the specific unit of the ship
      * @param y y-location of the unit of the ship
      * @param x x-location of the unit of the ship
-     * @param isUser denotes if the ship is on the playerfield or the enemyfield
+     * @param isUser denotes if the ship is on the playerField or the enemyField
      */
     public void setLoc(int i, int y, int x, boolean isUser) {
         if (isUser) {
