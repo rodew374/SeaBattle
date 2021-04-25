@@ -18,9 +18,11 @@ public class Main {
         private final int SIZE = 10;
         private final Scanner scanner = new Scanner(System.in);
         private final char[][] playerField;
+        private boolean gameOver;
 
         public Game() {
             playerField = createField();
+            gameOver = false;
 
         }
 
@@ -46,11 +48,20 @@ public class Main {
 
             System.out.println("\nThe game starts!");
             displayField(playerField, true);
+            System.out.print("\nTake a shot!\n\n> ");
             takeShot(playerField);
         }
 
         /**
-         * Displays the play area to the user
+         * Displays the play area to the user.
+         * @param field can either be a player or enemy field
+         */
+        private void displayField(char[][] field) {
+            displayField(field, false);
+        }
+
+        /**
+         * Displays the play area to the user, with the option to be covered by the Fog of War
          * @param field can either be a player or enemy field
          * @param fogOfWar determines if ship locations are shown, shown if false
          */
@@ -82,8 +93,8 @@ public class Main {
 
             for (Ship ship : Ship.values()) {
                 System.out.printf(prompt, ship.getName(), ship.getSize());
-                setShip(ship);
-                displayField(playerField, false);
+                setShip(ship, true);
+                displayField(playerField);
             }
         }
 
@@ -91,7 +102,7 @@ public class Main {
          * Sets position of the ships
          * @param ship enum to be set
          */
-        private void setShip(Ship ship) {
+        private void setShip(Ship ship, boolean isUser) {
             boolean isHorizontal;
             boolean isVertical;
             char startY;
@@ -119,15 +130,16 @@ public class Main {
                     fieldIndex = startX < endX ? startX - 1 : endX - 1;
                     if (isLegal(startY, startX, length, fieldIndex, true)) {
                         for (int i = 0; i < ship.getSize(); i++) {
+                            ship.setLoc(i, startY - 'A', fieldIndex, isUser);
                             playerField[startY - 'A'][fieldIndex++] = 'O';
                         }
                     } else {
                         System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
-                        setShip(ship);
+                        setShip(ship, isUser);
                     }
                 } else {
                     System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship.getName());
-                    setShip(ship);
+                    setShip(ship, isUser);
                 }
             } else if (isVertical) {
                 length = Math.abs(startY - endY) + 1;
@@ -135,19 +147,20 @@ public class Main {
                     fieldIndex = startY < endY ? startY - 'A' : endY - 'A';
                     if (isLegal(startY, startX, length, fieldIndex, false)) {
                         for (int i = 0; i < ship.getSize(); i++) {
+                            ship.setLoc(i, fieldIndex, startX - 1, isUser);
                             playerField[fieldIndex++][startX - 1] = 'O';
                         }
                     } else {
                         System.out.print("\nError! You placed it too close to another one. Try again:\n\n> ");
-                        setShip(ship);
+                        setShip(ship, isUser);
                     }
                 } else {
                     System.out.printf("\nError! Wrong length of the %s! Try again:\n\n> ", ship.getName());
-                    setShip(ship);
+                    setShip(ship, isUser);
                 }
             } else {
                 System.out.print("\nError! Wrong ship location! Try again:\n\n> ");
-                setShip(ship);
+                setShip(ship, isUser);
             }
         }
 
@@ -164,7 +177,7 @@ public class Main {
         }
 
         /**
-         * Checks is a ship can be placed at the specified location
+         * Checks if a ship can be placed at the specified location
          * @param startY a letter [A-J], representing first half of starting coordinates for the ship to be placed
          * @param startX a number [1-10], representing second half of starting coordinates for the ship to be placed
          * @param length length of ship to be placed
@@ -218,7 +231,7 @@ public class Main {
         }
 
         /**
-         * Gathers coordinate from the user and shoots at the passed war field
+         * Gathers coordinate from the user and shoots at the passed war field.
          * @param field area to be shot at
          */
         private void takeShot(char[][] field) {
@@ -228,7 +241,7 @@ public class Main {
             int x;
             char target;
 
-            System.out.print("\nTake a shot!\n\n> ");
+
 
             coord = getCoord();
             y = coord[0].charAt(0);
@@ -238,20 +251,50 @@ public class Main {
                 target = field[y - 'A'][x - 1];
                 if (target == 'O') {
                     field[y - 'A'][x - 1] = 'X';
-                    message = "You hit a ship!";
+                    message = Ship.hitShip(y - 'A', x - 1, field)
+                            ? "You sank a ship! Specify a new target:"
+                            : "You hit a ship! Try again:";
                 } else if (target == 'X') {
-                    message = "You've already hit that target!";
+                    message = "You've already hit that target. Try again:";
                 } else {
                     field[y - 'A'][x - 1] = 'M';
-                    message = "You missed!";
+                    message = "You missed. Try again:";
                 }
+
                 displayField(field, true);
-                System.out.printf("\n%s\n", message);
-                displayField(field, false);
+                updateGameStatus();
+
+                if (gameOver) {
+                    System.out.println("\nYou sank the last ship. You won. Congratulations!");
+                    System.exit(1);
+                } else {
+                    System.out.printf("\n%s\n\n>", message);
+                    takeShot(field);
+                }
             } catch (IndexOutOfBoundsException e) {
-                System.out.print("\nError! You entered the wrong coordinates! Try again:\n ");
+                System.out.print("\nError! You entered the wrong coordinates! Try again:\n\n> ");
                 takeShot(field);
             }
+        }
+
+        /**
+         * Check is all user or enemy ships have been sunk.
+         * If either has lost all ships, gameOver boolean will be updated to true.
+         */
+        private void updateGameStatus() {
+            int userShips = 5;
+            int enemyShips = 5;
+
+            for (Ship ship : Ship.values()) {
+                if (!ship.userAfloat) {
+                    userShips--;
+                }
+                if (!ship.enemyAfloat) {
+                    enemyShips--;
+                }
+            }
+
+            gameOver = userShips == 0 || enemyShips == 0;
         }
     }
 }
