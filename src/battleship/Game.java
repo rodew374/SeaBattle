@@ -2,14 +2,17 @@ package battleship;
 
 /**
  * This Game class runs the game Battleship
- * @version 1.15 25 Apr 2021 Version Fixes the weird entry point to the program, no longer requiring
- * a static class.
+ * @version 2.0 30 Apr 2021 Version implements better abstraction and game is now two-player.
  * @author Zac Inman
  */
 public class Game {
     private final Player player1;
     private final Player player2;
 
+    /**
+     * Entry point to the program
+     * @param args default
+     */
     public static void main(String[] args) {
         Game game = new Game();
 
@@ -17,6 +20,9 @@ public class Game {
         game.start();
     }
 
+    /**
+     * Constructor for a 2-Person game of Battleship
+     */
     public Game() {
         player1 = new Player(1);
         player2 = new Player(2, player1);
@@ -28,32 +34,16 @@ public class Game {
      */
     private void setUp() {
         player1.takePosition();
+        Player.changePlayerPrompt();
         player2.takePosition();
     }
 
-    private void start() {
-        player1.battle();
-    }
-
-
-
     /**
-     * Check is all user or enemy ships have been sunk.
-     * If either has lost all ships, gameOver boolean will be updated to true.
+     * Starts the game.
+     * Player one starts by entering coordinates of first shot. Player two will go next.
+     * Game continues until a player has sunk all their opponents ships.
      */
-    private void updateGameStatus() {
-        int userShips = 5;
-        int enemyShips = 5;
-
-        for (ShipType ship : ShipType.values()) {
-            if (!ship.userAfloat) {
-                userShips--;
-            }
-            if (!ship.enemyAfloat) {
-                enemyShips--;
-            }
-        }
-
-        gameOver = userShips == 0 || enemyShips == 0;
+    private void start() {
+        player1.startBattle();
     }
 }

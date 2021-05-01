@@ -7,10 +7,10 @@ import java.util.Scanner;
 class Player {
     private static final int FIELD_SIZE = 10;
     private static final Scanner scanner = new Scanner(System.in);
-    private static boolean gameOver = false;
-    private final Ship[] ships = {new Ship(ShipType.CARRIER), new Ship(ShipType.BATTLESHIP),
-                                    new Ship(ShipType.SUBMARINE), new Ship(ShipType.CRUISER),
-                                        new Ship(ShipType.DESTROYER)};
+    final Ship[] ships = {new Ship(ShipType.CARRIER), new Ship(ShipType.BATTLESHIP),
+                            new Ship(ShipType.SUBMARINE), new Ship(ShipType.CRUISER),
+                                new Ship(ShipType.DESTROYER)};
+    int shipsAfloat = 5;
     private final char[][] GAME_FIELD;
     private final int NAME;
     private Player opponent;
@@ -46,13 +46,42 @@ class Player {
         this.opponent = opponent;
     }
 
-    void battle() {
-        Player yourTurn = this;
+    /**
+     * Players will take turns shooting at each other's GAME_FIELD's.
+     * Method will continue until a player's last ship is sunk.
+     */
+    void startBattle() {
+        Player current = opponent;
 
-        while (!gameOver) {
-
+        while (current.shipsAfloat > 0 && current.opponent.shipsAfloat > 0) {
+            changePlayerPrompt();
+            current = current.opponent;
+            current.opponent.display();
+            System.out.print("----------------------");
+            current.display(false);
+            System.out.printf("\nPlayer %d, Take a shot!\n\n> ", current.NAME);
+            current.takeShot();
         }
 
+        System.out.printf("\nYou sank the last ship. Congratulations! Player %d wins!!!", current.NAME);
+    }
+
+    /**
+     * Prompts the current player to give the controls to their opponent.
+     * Player should click enter to pass the turn.
+     * Method also prints to the console a 'form feed' (\f) character.
+     * Using IntelliJ with the 'Grep Console' plugin, printing \f allows me to clear the console.
+     */
+    static void changePlayerPrompt() {
+        System.out.println("\nPress Enter and pass the move to opponent");
+
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            System.in.read();
+        } catch (IOException ignored) {
+
+        }
+        System.out.println("\f");
     }
 
     /**
@@ -113,15 +142,6 @@ class Player {
             placeShip(ship);
             display(false);
         }
-
-        System.out.printf("Press Enter and pass the move to player %d\n", opponent);
-
-        try {
-            System.in.read();
-        } catch (IOException ignored) {
-
-        }
-        System.out.println("\f");
     }
 
     /**
@@ -261,33 +281,27 @@ class Player {
         x = Integer.parseInt(coord[1]);
 
         try {
-            target = GAME_FIELD[y - 'A'][x - 1];
+            target = opponent.GAME_FIELD[y - 'A'][x - 1];
             if (target == 'O') {
-                GAME_FIELD[y - 'A'][x - 1] = 'X';
-                message = ShipType.hitShip(y - 'A', x - 1, GAME_FIELD)
-                        ? "You sank a ship! Specify a new target:"
-                        : "You hit a ship! Try again:";
+                opponent.GAME_FIELD[y - 'A'][x - 1] = 'X';
+                if (Ship.hitShip(y - 'A', x - 1, opponent)){
+                    message = "You sank a ship!";
+                    opponent.shipsAfloat--;
+                } else {
+                    message = "You hit a ship!";
+                }
             } else if (target == 'X') {
-                message = "You've already hit that target. Try again:";
+                message = "You've already hit that target.";
             } else {
-                GAME_FIELD[y - 'A'][x - 1] = 'M';
-                message = "You missed. Try again:";
+                opponent.GAME_FIELD[y - 'A'][x - 1] = 'M';
+                message = "You missed.";
             }
 
-            displayField(field, true);
-            updateGameStatus();
+            System.out.printf("\n%s\n", message);
 
-            if (gameOver) {
-                System.out.println("\nYou sank the last ship. You won. Congratulations!");
-                System.exit(1);
-            } else {
-                System.out.printf("\n%s\n\n>", message);
-                takeShot(field);
-            }
         } catch (IndexOutOfBoundsException e) {
             System.out.print("\nError! You entered the wrong coordinates! Try again:\n\n> ");
-            takeShot(field);
+            takeShot();
         }
     }
-
 }

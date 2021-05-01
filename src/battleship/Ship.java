@@ -6,7 +6,7 @@ package battleship;
 public class Ship {
     final ShipType type;
     final int[][] location;
-    boolean afloat;
+    int units;
 
     /**
      * Constructor for each Ship.
@@ -15,6 +15,7 @@ public class Ship {
     Ship(ShipType type) {
         this.type = type;
         location = new int[type.getSize()][2];
+        units = type.getSize();
     }
 
     /**
@@ -29,4 +30,22 @@ public class Ship {
         location[i][1] = x;
     }
 
+    /**
+     * Method checks if shot will sink ship.
+     * If ship will be sunk, userAfloat and enemyAfloat will be updated to false respectively.
+     * @param y y-coordinate of shot fired
+     * @param x x-coordinate of shot fired
+     * @param player the player whose ships are being shot at
+     * @return true if ship has been sunk
+     */
+    public static boolean hitShip(int y, int x, Player player) {
+        for (Ship ship : player.ships) {
+            for (int[] unit : ship.location) {
+                if (unit[0] == y && unit[1] == x) {
+                    return --ship.units <= 0;
+                }
+            }
+        }
+        return false;
+    }
 }
